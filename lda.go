@@ -1,12 +1,10 @@
 package golda
 
 import (
-	"math/rand"
-	"time"
 	"log"
+	"math/rand"
 	"sort"
-	"math"
-	"go/doc"
+	"time"
 )
 
 //From previous research, we have found α =50/T and β = 0.01 to work well with many different text collections.
@@ -47,7 +45,7 @@ func (lda *LDA) Init(topic_count int, corpus Corpus, dictionary *Dictionary) *LD
 		for i, word := range d.tokens {
 			topic = rand.Intn(lda.T)
 			d.ta[i] = topic
-			lda.WT.W[word][topic] ++
+			lda.WT.W[word][topic]++
 		}
 	}
 	// count document-topic assignment for every document
@@ -109,20 +107,19 @@ func (lda *LDA) Step() {
 }
 
 func (lda *LDA) CorpusLogLikelihood(corpus *Corpus) float32 {
-	var total_log_likelihood  float32
+	var total_log_likelihood float32
 	for di, d := range lda.corpus {
 		total_log_likelihood += lda.DocumentLogLikelihood(di, d)
 	}
 	return total_log_likelihood
 }
 
-func (lda *LDA) DocumentLogLikelihood(di, doc *Document) float32 {
-	num_topics := lda.T
+func (lda *LDA) DocumentLogLikelihood(di int, doc *Document) float32 {
 	doc_length := len(doc.tokens)
 
 	// Compute P(z|d) for the given document and all topics.
-	prob_topic_given_document := make([]float32,lda.T)
-	smoothed_doc_length := float32(doc_length) + lda.α * float32(lda.T)
+	prob_topic_given_document := make([]float32, lda.T)
+	smoothed_doc_length := float32(doc_length) + lda.α*float32(lda.T)
 	// accumulate document topic counts
 	for _, t := range doc.ta {
 		prob_topic_given_document[t]++
@@ -131,34 +128,34 @@ func (lda *LDA) DocumentLogLikelihood(di, doc *Document) float32 {
 	for t := range prob_topic_given_document {
 		prob_topic_given_document[t] = (prob_topic_given_document[t] + float32(lda.T)) / smoothed_doc_length
 	}
+	log_likelihood := float32(0.0)
+	/*
+		// Get global topic occurrences, which will be used to compute P(w|z).
+		global_topic_histogram := sampler.model.GetGlobalTopicHistogram()
+		prob_word_given_topic := make([]float32,lda.T)
 
-	// Get global topic occurrences, which will be used to compute P(w|z).
-	global_topic_histogram := sampler.model.GetGlobalTopicHistogram()
-	prob_word_given_topic := make([]float32,lda.T)
-	log_likelihood := 0.0;
+		// A document's log-likelihood is the sum of log-likelihoods
+		// of its words.  Compute the likelihood for every word and
+		// sum the logs.
+		for i, wi := range doc.ta {
+			// Get topic_count_distribution of the current word,
+			// which will be used to Compute P(w|z).
+			word_topic_histogram := sampler.model.GetWordTopicHistogram(iter.Word())
 
-	// A document's log-likelihood is the sum of log-likelihoods
-	// of its words.  Compute the likelihood for every word and
-	// sum the logs.
-	for i, wi := range doc.ta {
-		// Get topic_count_distribution of the current word,
-		// which will be used to Compute P(w|z).
-		word_topic_histogram := sampler.model.GetWordTopicHistogram(iter.Word())
+			// Compute P(w|z).
+			for t := 0; t < num_topics; t++ {
+				prob_word_given_topic[t] =
+					(word_topic_histogram[t] + lda.β) /
+						(global_topic_histogram[t] + float32(len(doc.tokens)) * lda.β)
+			}
 
-		// Compute P(w|z).
-		for t := 0; t < num_topics; t++ {
-			prob_word_given_topic[t] =
-				(word_topic_histogram[t] + lda.β) /
-					(global_topic_histogram[t] + float32(len(doc.tokens)) * lda.β)
+			// Compute P(w) = sum_z P(w|z)P(z|d)
+			prob_word := 0.0
+			for t := 0; t < num_topics; t++ {
+				prob_word += prob_word_given_topic[t] * prob_topic_given_document[t]
+			}
+			log_likelihood += math.Log(prob_word);
 		}
-
-		// Compute P(w) = sum_z P(w|z)P(z|d)
-		prob_word := 0.0
-		for t := 0; t < num_topics; t++ {
-			prob_word += prob_word_given_topic[t] * prob_topic_given_document[t]
-		}
-		log_likelihood += math.Log(prob_word);
-	}
-
+	*/
 	return log_likelihood
 }
